@@ -16,6 +16,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Set SOURCES to contain all the source files
 set(SOURCES
     Source/GameScene.cpp
+    Source/LevelData.cpp
     Source/Main.cpp
 )
 

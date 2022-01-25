@@ -7,9 +7,10 @@
 int main()
 {
     {
-        GameScene scene;
-
         InitWindow(800, 600, "Hamiltonian Escape");
+
+        GameScene scene;
+        scene.Begin();
 
         while (!WindowShouldClose())
         {
