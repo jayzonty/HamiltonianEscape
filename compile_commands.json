@@ -1,0 +1,12 @@
+[
+{
+  "directory": "/home/jayzon/Documents/Projects/JameGam15/build",
+  "command": "/usr/bin/c++  -I/home/jayzon/Documents/Projects/JameGam15/Source -Wall -std=gnu++20 -o CMakeFiles/JameGam15.dir/Source/GameScene.cpp.o -c /home/jayzon/Documents/Projects/JameGam15/Source/GameScene.cpp",
+  "file": "/home/jayzon/Documents/Projects/JameGam15/Source/GameScene.cpp"
+},
+{
+  "directory": "/home/jayzon/Documents/Projects/JameGam15/build",
+  "command": "/usr/bin/c++  -I/home/jayzon/Documents/Projects/JameGam15/Source -Wall -std=gnu++20 -o CMakeFiles/JameGam15.dir/Source/Main.cpp.o -c /home/jayzon/Documents/Projects/JameGam15/Source/Main.cpp",
+  "file": "/home/jayzon/Documents/Projects/JameGam15/Source/Main.cpp"
+}
+]
