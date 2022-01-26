@@ -3,10 +3,14 @@
 #include "Constants.hpp"
 #include "LevelData.hpp"
 
+#include <cctype>
 #include <iostream>
 #include <raylib.h>
+#include <string>
 
 #define CELL_SIZE 32.0f
+#define SWITCH_RADIUS 12.0f
+#define SWITCH_LABEL_FONT_SIZE 24 
 
 /**
  * @brief Constructor
@@ -121,13 +125,23 @@ void GameScene::Update(const float& deltaTime)
                                 CellData *goalCell = roomData.cells.Get(roomData.goalX, roomData.goalY);
                                 goalCell->state = Constants::GOAL_UNLOCKED_STATE;
                             }
-                            else
-                            {
-                            }
                         }
                         else if( cellData->state == Constants::FLOOR_VISITED_STATE)
                         {
                             std::cout << "Illegal move!" << std::endl;
+                        }
+                    }
+                    else if (cellData->type == CellData::Type::Switch)
+                    {
+                        int32_t switchId = roomData.GetSwitchIdFromSwitchPosition(newPlayerX, newPlayerY);
+                        if (switchId != -1)
+                        {
+                            cellData->type = CellData::Type::Floor;
+                            cellData->state = Constants::FLOOR_VISITED_STATE;
+
+                            SwitchDoorMapping &mapping = roomData.switchDoorMappings[switchId];
+                            CellData *doorCell = roomData.cells.Get(mapping.doorX, mapping.doorY);
+                            doorCell->type = CellData::Type::Floor;
                         }
                     }
                     else if (cellData->type == CellData::Type::Goal)
@@ -174,21 +188,59 @@ void GameScene::Draw()
             for (int32_t y = 0; y < roomHeight; ++y)
             {
                 CellData *cellData = roomData.cells.Get(x, y);
-                switch (cellData->type)
+                if (cellData->type == CellData::Type::Empty)
                 {
-                    case CellData::Type::Empty:
-                        break;
-                    case CellData::Type::Door:
-                        DrawRectangle(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE, BROWN);
-                        break;
-                    case CellData::Type::Floor:
-                        break;
-                    case CellData::Type::Goal:
-                        DrawRectangle(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE, GREEN);
-                        break;
-                    case CellData::Type::Wall:
-                        DrawRectangle(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE, GRAY);
-                        break;
+                }
+                else if (cellData->type == CellData::Type::Switch)
+                {
+                    DrawCircle((x + 0.5f) * CELL_SIZE, (y + 0.5f) * CELL_SIZE, SWITCH_RADIUS, RED);
+
+                    int32_t switchId = roomData.GetSwitchIdFromSwitchPosition(x, y);
+                    if (switchId != -1)
+                    {
+                        char c = static_cast<char>(switchId);
+                        c = std::toupper(c);
+
+                        std::string text;
+                        text.push_back(c);
+
+                        Vector2 textSize = MeasureTextEx(GetFontDefault(), text.c_str(), SWITCH_LABEL_FONT_SIZE, 0.0f);
+                        float paddingLeft = (CELL_SIZE - textSize.x) / 2;
+                        float paddingTop = (CELL_SIZE - textSize.y) / 2;
+                        Vector2 textPosition { x * CELL_SIZE + paddingLeft, y * CELL_SIZE + paddingTop };
+                        DrawTextEx(GetFontDefault(), text.c_str(), textPosition, SWITCH_LABEL_FONT_SIZE, 0.0f, BLACK);
+                    }
+                }
+                else if (cellData->type == CellData::Type::Door)
+                {
+                    DrawRectangle(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE, BROWN);
+
+                    int32_t switchId = roomData.GetSwitchIdFromDoorPosition(x, y);
+                    if (switchId != -1)
+                    {
+                        char c = static_cast<char>(switchId);
+                        c = std::toupper(c);
+
+                        std::string text;
+                        text.push_back(c);
+
+                        Vector2 textSize = MeasureTextEx(GetFontDefault(), text.c_str(), SWITCH_LABEL_FONT_SIZE, 0.0f);
+                        float paddingLeft = (CELL_SIZE - textSize.x) / 2;
+                        float paddingTop = (CELL_SIZE - textSize.y) / 2;
+                        Vector2 textPosition { x * CELL_SIZE + paddingLeft, y * CELL_SIZE + paddingTop };
+                        DrawTextEx(GetFontDefault(), text.c_str(), textPosition, SWITCH_LABEL_FONT_SIZE, 0.0f, BLACK);
+                    }
+                }
+                else if (cellData->type == CellData::Type::Floor)
+                {
+                }
+                else if (cellData->type == CellData::Type::Goal)
+                {
+                    DrawRectangle(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE, GREEN);
+                }
+                else if (cellData->type == CellData::Type::Wall)
+                {
+                    DrawRectangle(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE, GRAY);
                 }
             }
         }
@@ -229,7 +281,8 @@ void GameScene::End()
  */
 bool GameScene::IsTraversible(CellData::Type cellType)
 {
-    if (cellType == CellData::Type::Wall)
+    if ((cellType == CellData::Type::Wall)
+        || (cellType == CellData::Type::Door))
     {
         return false;
     }

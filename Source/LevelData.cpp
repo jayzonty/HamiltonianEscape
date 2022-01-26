@@ -1,5 +1,6 @@
 #include "LevelData.hpp"
 
+#include <cctype>
 #include <cstdint>
 #include <fstream>
 #include <iostream>
@@ -8,8 +9,47 @@
 #define WALL_SYMBOL '#'
 #define START_SYMBOL '*'
 #define GOAL_SYMBOL '@'
-#define DOOR_SYMBOL '$'
 #define FLOOR_SYMBOL '.'
+
+/**
+ * @brief Gets the switch ID from the switch position
+ * @param[in] switchX X-position of the switch
+ * @param[in] switchY Y-position of the switch
+ * @return Switch ID of the switch at the specified position. If the switch at
+ * the specified position does not exist in the database, returns -1.
+ */
+int32_t RoomData::GetSwitchIdFromSwitchPosition(const int32_t &switchX, const int32_t &switchY)
+{
+    for (auto &it : switchDoorMappings)
+    {
+        if ((it.second.switchX == switchX) && (it.second.switchY == switchY))
+        {
+            return it.first;
+        }
+    }
+
+    return -1;
+}
+
+/**
+ * @brief Gets the switch ID from the door position
+ * @param[in] doorX X-position of the door
+ * @param[in] doorY Y-position of the door
+ * @return Switch ID of the door at the specified position. If the door at
+ * the specified position does not exist in the database, returns -1.
+ */
+int32_t RoomData::GetSwitchIdFromDoorPosition(const int32_t& doorX, const int32_t& doorY)
+{
+    for (auto &it : switchDoorMappings)
+    {
+        if ((it.second.doorX == doorX) && (it.second.doorY == doorY))
+        {
+            return it.first;
+        }
+    }
+
+    return -1;
+}
 
 /**
  * @brief Constructor
@@ -65,29 +105,46 @@ bool LevelData::LoadFromFile(const std::string &levelFilePath)
             std::cout << line << std::endl;
             for (int32_t x = 0; x < roomWidth; ++x)
             {
-                switch (line[x])
+                if (std::isalpha(line[x]))
                 {
-                    case FLOOR_SYMBOL:
-                        room.cells.Get(x, y)->type = CellData::Type::Floor;
-                        break;
-                    case WALL_SYMBOL:
-                        room.cells.Get(x, y)->type = CellData::Type::Wall;
-                        break;
+                    int32_t switchId = static_cast<int32_t>(std::tolower(line[x]));
 
-                    case GOAL_SYMBOL:
-                        room.cells.Get(x, y)->type = CellData::Type::Goal;
-                        room.goalX = x;
-                        room.goalY = y;
-                        break;
-
-                    case DOOR_SYMBOL:
+                    if (std::islower(line[x]))
+                    {
+                        room.switchDoorMappings[switchId].switchX = x;
+                        room.switchDoorMappings[switchId].switchY = y;
+                        room.cells.Get(x, y)->type = CellData::Type::Switch;
+                    }
+                    else
+                    {
+                        room.switchDoorMappings[switchId].doorX = x;
+                        room.switchDoorMappings[switchId].doorY = y;
                         room.cells.Get(x, y)->type = CellData::Type::Door;
-                        break;
-                    
-                    default:
-                        room.cells.Get(x, y)->type = CellData::Type::Empty;
-                        break;
+                    }
                 }
+                else
+                {
+                    switch (line[x])
+                    {
+                        case FLOOR_SYMBOL:
+                            room.cells.Get(x, y)->type = CellData::Type::Floor;
+                            break;
+                        case WALL_SYMBOL:
+                            room.cells.Get(x, y)->type = CellData::Type::Wall;
+                            break;
+
+                        case GOAL_SYMBOL:
+                            room.cells.Get(x, y)->type = CellData::Type::Goal;
+                            room.goalX = x;
+                            room.goalY = y;
+                            break;
+
+                        default:
+                            room.cells.Get(x, y)->type = CellData::Type::Empty;
+                            break;
+                    }
+                }
+                
             }
         }   
 
