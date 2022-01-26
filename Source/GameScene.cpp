@@ -15,8 +15,8 @@
 /**
  * @brief Constructor
  */
-GameScene::GameScene()
-    : Scene()
+GameScene::GameScene(SceneManager *sceneManager)
+    : Scene(sceneManager)
     , m_levels()
     , m_currentLevelIndex(-1)
     , m_currentRoomIndex(-1)
@@ -156,6 +156,12 @@ void GameScene::Update(const float& deltaTime)
                             }
                             else
                             {
+                                int32_t numLevels = m_levels.size();
+                                if (m_currentLevelIndex + 1 < numLevels)
+                                {
+
+                                }
+
                                 std::cout << "Change levels!" << std::endl;
                             }
                         }

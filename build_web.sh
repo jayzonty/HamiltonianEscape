@@ -4,7 +4,7 @@ RAYLIB_PATH="/home/jayzon/Documents/Projects/JameGam15/Deps/raylib"
 RAYLIB_LIB_PATH="${RAYLIB_PATH}/libraylib.a"
 RAYLIB_INCLUDE_PATH="${RAYLIB_PATH}/src"
 
-SOURCE_FILES="../Source/GameScene.cpp ../Source/LevelData.cpp ../Source/Main.cpp"
+SOURCE_FILES="../Source/GameScene.cpp ../Source/LevelData.cpp ../Source/Main.cpp ../Source/SceneManager.cpp ../Source/TitleScene.cpp"
 
 # Create build directory if it doesn't exist yet
 if [ ! -d ./build_web ]; then

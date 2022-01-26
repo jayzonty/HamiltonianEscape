@@ -2,6 +2,7 @@
 
 #include "LevelData.hpp"
 #include "Scene.hpp"
+#include "SceneManager.hpp"
 
 #include <vector>
 
@@ -63,7 +64,7 @@ public:
     /**
      * @brief Constructor
      */
-    GameScene();
+    GameScene(SceneManager *sceneManager);
 
     /**
      * @brief Destructor

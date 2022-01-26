@@ -18,6 +18,8 @@ set(SOURCES
     Source/GameScene.cpp
     Source/LevelData.cpp
     Source/Main.cpp
+    Source/SceneManager.cpp
+    Source/TitleScene.cpp
 )
 
 # Executable
