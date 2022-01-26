@@ -16,11 +16,10 @@ struct CellData
      */
     enum class Type
     {
+        Empty,
         Floor,
-
         Door,
         Wall,
-
         Goal
     };
 
@@ -41,45 +40,9 @@ struct CellData
 struct RoomData
 {
     /**
-     * X-coordinate of the room's upper-left corner
-     */
-    int32_t upperLeftX;
-
-    /**
-     * Y-coordinate of the room's upper-left corner
-     */
-    int32_t upperLeftY;
-
-    /**
-     * Room width
-     */
-    int32_t width;
-
-    /**
-     * Room height
-     */
-    int32_t height;
-
-    /**
-     * Flag indicating whether this room has been visited or not
-     */
-    bool isVisited;
-};
-
-/**
- * Struct containing data about a level
- */
-struct LevelData
-{
-    /**
      * Grid for the cell data
      */
     Grid<CellData> cells;
-
-    /**
-     * List of room data
-     */
-    std::vector<RoomData> rooms;
 
     /**
      * Player's starting X-position
@@ -92,14 +55,25 @@ struct LevelData
     int32_t playerStartY;
 
     /**
-     * Player's current X-position
+     * X-position of the goal cell
      */
-    int32_t playerPositionX;
+    int32_t goalX;
 
     /**
-     * Player's current Y-position
+     * Y-position of the goal cell
      */
-    int32_t playerPositionY;
+    int32_t goalY;
+};
+
+/**
+ * Struct containing data about a level
+ */
+struct LevelData
+{
+    /**
+     * List of room data
+     */
+    std::vector<RoomData> rooms;
 
 public:
     /**
@@ -118,13 +92,4 @@ public:
      * @return Returns true if the operation was successful. Returns false otherwise
      */
     bool LoadFromFile(const std::string& levelFilePath);
-
-    /**
-     * @brief Gets the index of the room that the specified position falls under
-     * @param[in] x X-position
-     * @param[in] y Y-position
-     * @return Index of the room that the specified position falls under. Returns -1 if
-     * the specified position falls on an invalid room.
-     */
-    int32_t GetRoomIndexAtPosition(const int32_t& x, const int32_t y);
 };

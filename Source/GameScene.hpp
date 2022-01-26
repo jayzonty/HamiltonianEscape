@@ -25,6 +25,21 @@ private:
     int32_t m_currentLevelIndex;
 
     /**
+     * Current room
+     */
+    int32_t m_currentRoomIndex;
+
+    /**
+     * Current X-position of the player
+     */
+    int32_t m_playerPositionX;
+
+    /**
+     * Current Y-position of the player
+     */
+    int32_t m_playerPositionY;
+
+    /**
      * List of accepted keys to make the player move up
      */
     std::vector<uint32_t> m_moveUpKeys;
@@ -97,4 +112,16 @@ private:
      * @brief Resets the current level
      */
     void ResetCurrentLevel();
+
+    /**
+     * @brief Resets the current room
+     */
+    void ResetCurrentRoom();
+
+    /**
+     * @brief Checks if the specified room is completed or not
+     * @param[in] roomData Room data
+     * @return Returns true if the specified room is completed
+     */
+    bool IsRoomComplete(RoomData &roomData);
 };

@@ -1,5 +1,6 @@
 #include "GameScene.hpp"
 
+#include "Constants.hpp"
 #include "LevelData.hpp"
 
 #include <iostream>
@@ -14,6 +15,7 @@ GameScene::GameScene()
     : Scene()
     , m_levels()
     , m_currentLevelIndex(-1)
+    , m_currentRoomIndex(-1)
     , m_moveUpKeys()
     , m_moveDownKeys()
     , m_moveLeftKeys()
@@ -66,9 +68,10 @@ void GameScene::Begin()
  */
 void GameScene::Update(const float& deltaTime)
 {
-    if (m_currentLevelIndex >= 0)
+    if ((m_currentLevelIndex >= 0) && (m_currentRoomIndex >= 0))
     {
         LevelData &levelData = m_levels[m_currentLevelIndex];
+        RoomData &roomData = levelData.rooms[m_currentRoomIndex];
 
         int32_t moveX = 0, moveY = 0;
         if (IsAnyKeyPressed(m_moveUpKeys))
@@ -92,56 +95,56 @@ void GameScene::Update(const float& deltaTime)
 
         if ((moveX != 0) || (moveY != 0))
         {
-            int32_t currentPlayerX = levelData.playerPositionX;
-            int32_t currentPlayerY = levelData.playerPositionY;
+            int32_t currentPlayerX = m_playerPositionX;
+            int32_t currentPlayerY = m_playerPositionY;
             int32_t newPlayerX = currentPlayerX + moveX;
             int32_t newPlayerY = currentPlayerY + moveY;
-            if (levelData.cells.IsValidLocation(newPlayerX, newPlayerY)
-                && IsTraversible(levelData.cells.Get(newPlayerX, newPlayerY)->type))
+            if (roomData.cells.IsValidLocation(newPlayerX, newPlayerY)
+                && IsTraversible(roomData.cells.Get(newPlayerX, newPlayerY)->type))
             {
-                levelData.playerPositionX = newPlayerX;
-                levelData.playerPositionY = newPlayerY;
+                m_playerPositionX = newPlayerX;
+                m_playerPositionY = newPlayerY;
 
-                int32_t currentRoomIndex = levelData.GetRoomIndexAtPosition(
-                    currentPlayerX, currentPlayerY);
-                int32_t newRoomIndex = levelData.GetRoomIndexAtPosition(
-                    newPlayerX, newPlayerY);
+                CellData *cellData = roomData.cells.Get(newPlayerX, newPlayerY);
 
-                if ((newRoomIndex != -1)
-                    && (currentRoomIndex != newRoomIndex))
+                if ((currentPlayerX != newPlayerX)
+                    || (currentPlayerY != newPlayerY))
                 {
-                    if (levelData.rooms[newRoomIndex].isVisited)
+                    if (cellData->type == CellData::Type::Floor)
                     {
-                        std::cout << "Illegal move! Revisited a room!" << std::endl;
-                    }
-                    else
-                    {
-                        levelData.rooms[newRoomIndex].isVisited = true;
-                    }
-                }
-
-                CellData *cellData = levelData.cells.Get(newPlayerX, newPlayerY);
-                if (cellData->type == CellData::Type::Goal)
-                {
-                    bool isLevelComplete = true;
-
-                    int32_t numRooms = levelData.rooms.size();
-                    for (int32_t i = 0; i < numRooms; ++i)
-                    {
-                        if (!levelData.rooms[i].isVisited)
+                        if (cellData->state == Constants::FLOOR_UNVISITED_STATE)
                         {
-                            isLevelComplete = false;
-                            break;
+                            cellData->state = Constants::FLOOR_VISITED_STATE;
+
+                            if (IsRoomComplete(roomData))
+                            {
+                                CellData *goalCell = roomData.cells.Get(roomData.goalX, roomData.goalY);
+                                goalCell->state = Constants::GOAL_UNLOCKED_STATE;
+                            }
+                            else
+                            {
+                            }
+                        }
+                        else if( cellData->state == Constants::FLOOR_VISITED_STATE)
+                        {
+                            std::cout << "Illegal move!" << std::endl;
                         }
                     }
-
-                    if (isLevelComplete)
+                    else if (cellData->type == CellData::Type::Goal)
                     {
-                        std::cout << "Level complete!" << std::endl;
-                    }
-                    else
-                    {
-                        std::cout << "There are still unvisited rooms" << std::endl;
+                        if (cellData->state == Constants::GOAL_UNLOCKED_STATE)
+                        {
+                            int32_t numRooms = levelData.rooms.size();
+                            if (m_currentRoomIndex + 1 < numRooms)
+                            {
+                                ++m_currentRoomIndex;
+                                ResetCurrentRoom();
+                            }
+                            else
+                            {
+                                std::cout << "Change levels!" << std::endl;
+                            }
+                        }
                     }
                 }
             }
@@ -157,20 +160,24 @@ void GameScene::Draw()
     BeginDrawing();
     ClearBackground(WHITE);
 
-    if (m_currentLevelIndex >= 0)
+    if ((m_currentLevelIndex >= 0)
+        && (m_currentRoomIndex >= 0))
     {
         LevelData &levelData = m_levels[m_currentLevelIndex];
-        int32_t levelWidth = levelData.cells.GetWidth();
-        int32_t levelHeight = levelData.cells.GetHeight();
+        RoomData &roomData = levelData.rooms[m_currentRoomIndex];
+        int32_t roomWidth = roomData.cells.GetWidth();
+        int32_t roomHeight = roomData.cells.GetHeight();
 
         // Draw grid
-        for (int32_t x = 0; x < levelWidth; ++x)
+        for (int32_t x = 0; x < roomWidth; ++x)
         {
-            for (int32_t y = 0; y < levelHeight; ++y)
+            for (int32_t y = 0; y < roomHeight; ++y)
             {
-                CellData *cellData = levelData.cells.Get(x, y);
+                CellData *cellData = roomData.cells.Get(x, y);
                 switch (cellData->type)
                 {
+                    case CellData::Type::Empty:
+                        break;
                     case CellData::Type::Door:
                         DrawRectangle(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE, BROWN);
                         break;
@@ -186,33 +193,23 @@ void GameScene::Draw()
             }
         }
 
-        int32_t playerCurrentRoomIndex = levelData.GetRoomIndexAtPosition(levelData.playerPositionX, levelData.playerPositionY);
-        // Overlay a red rectangle on the cells in visited rooms
-        int32_t numRooms = levelData.rooms.size();
-        for (int32_t i = 0; i < numRooms; ++i)
+        // Overlay a red rectangle on top of visited cells
+        for (int32_t x = 0; x < roomWidth; ++x)
         {
-            if ((i != playerCurrentRoomIndex)
-                && (levelData.rooms[i].isVisited))
+            for (int32_t y = 0; y < roomHeight; ++y)
             {
-                int32_t upperLeftX = levelData.rooms[i].upperLeftX;
-                int32_t upperLeftY = levelData.rooms[i].upperLeftY;
-                int32_t lowerRightX = upperLeftX + levelData.rooms[i].width;
-                int32_t lowerRightY = upperLeftY + levelData.rooms[i].height;
-
-                for (int32_t x = upperLeftX; x < lowerRightX; ++x)
+                CellData *cellData = roomData.cells.Get(x, y);
+                if ((cellData->type == CellData::Type::Floor)
+                    && (cellData->state == Constants::FLOOR_VISITED_STATE)
+                    && ((m_playerPositionX != x) || (m_playerPositionY != y)))
                 {
-                    for (int32_t y = upperLeftY; y < lowerRightY; ++y)
-                    {
-                        DrawRectangle(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE, ColorAlpha(RED, 0.75f));
-                    }
+                    DrawRectangle(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE, ColorAlpha(RED, 0.75f));
                 }
             }
         }
 
         // Draw player
-        int32_t playerX = levelData.playerPositionX;
-        int32_t playerY = levelData.playerPositionY;
-        DrawCircle((playerX + 0.5f) * CELL_SIZE, (playerY + 0.5f) * CELL_SIZE, (CELL_SIZE - 6.0f) / 2.0f, BLUE);
+        DrawCircle((m_playerPositionX + 0.5f) * CELL_SIZE, (m_playerPositionY + 0.5f) * CELL_SIZE, (CELL_SIZE - 6.0f) / 2.0f, BLUE);
     }
     
     EndDrawing();
@@ -260,37 +257,78 @@ bool GameScene::IsAnyKeyPressed(const std::vector<uint32_t>& keys)
     return false;
 }
 
+/**
+ * @brief Resets the current level
+ */
 void GameScene::ResetCurrentLevel()
 {
-    if (m_currentLevelIndex == -1)
+    m_currentRoomIndex = 0;
+    ResetCurrentRoom();
+}
+
+/**
+ * @brief Resets the current room
+ */
+void GameScene::ResetCurrentRoom()
+{
+    if ((m_currentLevelIndex == -1) || (m_currentRoomIndex == -1))
     {
         return;
     }
 
     LevelData &levelData = m_levels[m_currentLevelIndex];
-    levelData.playerPositionX = levelData.playerStartX;
-    levelData.playerPositionY = levelData.playerStartY;
+    RoomData &roomData = levelData.rooms[m_currentRoomIndex];
+    m_playerPositionX = roomData.playerStartX;
+    m_playerPositionY = roomData.playerStartY;
 
-    int32_t levelWidth = levelData.cells.GetWidth();
-    int32_t levelHeight = levelData.cells.GetHeight();
-    for (int32_t x = 0; x < levelWidth; ++x)
+    int32_t roomWidth = roomData.cells.GetWidth();
+    int32_t roomHeight = roomData.cells.GetHeight();
+    for (int32_t x = 0; x < roomWidth; ++x)
     {
-        for (int32_t y = 0; y < levelHeight; ++y)
+        for (int32_t y = 0; y < roomHeight; ++y)
         {
-            CellData *cellData = levelData.cells.Get(x, y);
+            CellData *cellData = roomData.cells.Get(x, y);
             cellData->state = 0;
         }
     }
 
-    int32_t numRooms = levelData.rooms.size();
-    for (int32_t i = 0; i < numRooms; ++i)
+    CellData *playerCell = roomData.cells.Get(m_playerPositionX, m_playerPositionY);
+    if ((playerCell != nullptr)
+        && (playerCell->type == CellData::Type::Floor))
     {
-        levelData.rooms[i].isVisited = false;
+        playerCell->state = Constants::FLOOR_VISITED_STATE;
     }
 
-    int32_t playerRoomIndex = levelData.GetRoomIndexAtPosition(levelData.playerPositionX, levelData.playerPositionY);
-    if (playerRoomIndex != -1)
+    CellData *goalCell = roomData.cells.Get(roomData.goalX, roomData.goalY);
+    if (goalCell != nullptr)
     {
-        levelData.rooms[playerRoomIndex].isVisited = true;
+        goalCell->state = Constants::GOAL_LOCKED_STATE;
     }
+}
+
+/**
+ * @brief Checks if the specified room is completed or not
+ * @param[in] roomData Room data
+ * @return Returns true if the specified room is completed
+ */
+bool GameScene::IsRoomComplete(RoomData &roomData)
+{
+    int32_t roomWidth = roomData.cells.GetWidth();
+    int32_t roomHeight = roomData.cells.GetHeight();
+    for (int32_t x = 0; x < roomWidth; ++x)
+    {
+        for (int32_t y = 0; y < roomHeight; ++y)
+        {
+            CellData *cellData = roomData.cells.Get(x, y);
+            if (cellData->type == CellData::Type::Floor)
+            {
+                if (cellData->state == Constants::FLOOR_UNVISITED_STATE)
+                {
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
 }

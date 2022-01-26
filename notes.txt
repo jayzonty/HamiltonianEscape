@@ -1,0 +1,31 @@
+Levels
+- Tutorial
+- No obstacles
+  - Easy
+  - Medium
+- Standard obstacles
+  - Easy
+  - Medium
+  - Hard
+- Buttons to open up gates
+  - Easy
+  - Medium
+  - Hard
+
+. = Floor
+@ = Room Goal
+# = Wall
+* = Player start
+lowercase letter = switches
+UPPERCASE LETTER = gate corresponding to the lowercase switch
+
+# of rooms
+Room1Width Room1Height
+Room1Width x Room1Height data
+Room1PlayerStartX Room1PlayerStartY
+Room2Width Room2Height
+Room2Width x Room2Height data
+...
+
+3 // Number of rooms
+5 5 // Room, width = 5, height = 5
