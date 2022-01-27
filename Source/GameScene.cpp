@@ -9,13 +9,15 @@
 #include <raylib.h>
 #include <string>
 
-#define CELL_SIZE 32.0f
+#define CELL_SIZE 40.0f
 #define SWITCH_RADIUS 12.0f
 #define SWITCH_LABEL_FONT_SIZE 24 
 
 #define START_LEVEL_TIMER_DURATION 2.0f
 #define START_LEVEL_FADE_IN_DURATION 1.0f
 #define END_LEVEL_FADE_OUT_DURATION 1.0f
+
+#define INSTRUCTIONS_TEXT_FONT_SIZE 24
 
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
@@ -91,10 +93,10 @@ void GameScene::Begin()
 
     m_resetRoomKeys.push_back(KEY_R);
 
-    m_resetButtonBounds.width = 160.0f;
+    m_resetButtonBounds.width = 140.0f;
     m_resetButtonBounds.height = 50.0f;
-    m_resetButtonBounds.x = 50.0f;
-    m_resetButtonBounds.y = 600.0f - m_resetButtonBounds.height - 10.0f;
+    m_resetButtonBounds.x = WINDOW_WIDTH - m_resetButtonBounds.width - 10.0f;
+    m_resetButtonBounds.y = WINDOW_HEIGHT - m_resetButtonBounds.height - 10.0f;
 
     ResetCurrentLevel();
 
@@ -184,7 +186,6 @@ void GameScene::Update(const float& deltaTime)
                             if (cellData->state == Constants::GOAL_UNLOCKED_STATE)
                             {
                                 m_currentState = State::EndRoom;
-                                
                             }
                         }
 
@@ -355,6 +356,19 @@ void GameScene::Draw()
                 else if (cellData->type == CellData::Type::Goal)
                 {
                     DrawRectangle(offset.x + x * CELL_SIZE, offset.y + y * CELL_SIZE, CELL_SIZE, CELL_SIZE, GREEN);
+
+                    std::string text = "GOAL";
+                    float fontSize = 14.0f;
+                    int32_t textWidth = MeasureText(text.c_str(), fontSize);
+                    float paddingLeft = (CELL_SIZE - textWidth) / 2.0f;
+                    float paddingTop = (CELL_SIZE - fontSize) / 2.0f;
+                    DrawText(
+                        text.c_str(), 
+                        offset.x + paddingLeft + x * CELL_SIZE,
+                        offset.y + paddingTop + y * CELL_SIZE,
+                        fontSize,
+                        BLACK
+                    );
                 }
                 else if (cellData->type == CellData::Type::Wall)
                 {
@@ -384,7 +398,7 @@ void GameScene::Draw()
 
     // Draw reset button
     std::string resetText = "Reset (R)";
-    float resetTextFontSize = 32.0f;
+    float resetTextFontSize = 24.0f;
     DrawRectangleRec(m_resetButtonBounds, BLACK);
     int32_t resetTextWidth = MeasureText(
         resetText.c_str(),
@@ -397,6 +411,16 @@ void GameScene::Draw()
         m_resetButtonBounds.y + resetTextPaddingTop,
         resetTextFontSize,
         WHITE);
+
+    // Draw instructions text
+    std::string instructionsText = "W/A/S/D/Arrow Keys - Move";
+    DrawText(
+        instructionsText.c_str(), 
+        10, 
+        WINDOW_HEIGHT - INSTRUCTIONS_TEXT_FONT_SIZE - 10,
+        INSTRUCTIONS_TEXT_FONT_SIZE, 
+        BLACK
+    );
 
     // Draw level start stuff
     if ((m_currentState == State::StartLevel) || (m_currentState == State::EndLevel))
