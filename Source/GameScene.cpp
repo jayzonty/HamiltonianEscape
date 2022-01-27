@@ -21,6 +21,8 @@ GameScene::GameScene(SceneManager *sceneManager)
     , m_levels()
     , m_currentLevelIndex(-1)
     , m_currentRoomIndex(-1)
+    , m_playerPositionX(0)
+    , m_playerPositionY(0)
     , m_moveUpKeys()
     , m_moveDownKeys()
     , m_moveLeftKeys()
@@ -75,6 +77,13 @@ void GameScene::Begin()
     m_moveRightKeys.push_back(KEY_D);
     m_moveRightKeys.push_back(KEY_RIGHT);
 
+    m_resetRoomKeys.push_back(KEY_R);
+
+    m_resetButtonBounds.width = 160.0f;
+    m_resetButtonBounds.height = 50.0f;
+    m_resetButtonBounds.x = 50.0f;
+    m_resetButtonBounds.y = 600.0f - m_resetButtonBounds.height - 10.0f;
+
     ResetCurrentLevel();
 }
 
@@ -84,6 +93,19 @@ void GameScene::Begin()
  */
 void GameScene::Update(const float& deltaTime)
 {
+    Vector2 mousePosition = GetMousePosition();
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+    {
+        // Check if the reset button has been clicked, or if the reset button (R)
+        // has been pressed. If so, reset the current room
+        if (CheckCollisionPointRec(mousePosition, m_resetButtonBounds)
+            || IsAnyKeyPressed(m_resetRoomKeys))
+        {
+            ResetCurrentRoom();
+            return;
+        }
+    }
+
     if ((m_currentLevelIndex >= 0) && (m_currentRoomIndex >= 0))
     {
         LevelData &levelData = m_levels[m_currentLevelIndex];
@@ -140,7 +162,6 @@ void GameScene::Update(const float& deltaTime)
                         }
                         else if( cellData->state == Constants::FLOOR_VISITED_STATE)
                         {
-                            std::cout << "Illegal move!" << std::endl;
                         }
                     }
                     else if (cellData->type == CellData::Type::Switch)
@@ -285,6 +306,22 @@ void GameScene::Draw()
         // Draw player
         DrawCircle((m_playerPositionX + 0.5f) * CELL_SIZE, (m_playerPositionY + 0.5f) * CELL_SIZE, (CELL_SIZE - 6.0f) / 2.0f, BLUE);
     }
+
+    // Draw reset button
+    std::string resetText = "Reset (R)";
+    float resetTextFontSize = 32.0f;
+    DrawRectangleRec(m_resetButtonBounds, BLACK);
+    int32_t resetTextWidth = MeasureText(
+        resetText.c_str(),
+        resetTextFontSize);
+    float resetTextPaddingLeft = (m_resetButtonBounds.width - resetTextWidth) / 2.0f;
+    float resetTextPaddingTop = (m_resetButtonBounds.height - resetTextFontSize) / 2.0f;
+    DrawText(
+        resetText.c_str(),
+        m_resetButtonBounds.x + resetTextPaddingLeft,
+        m_resetButtonBounds.y + resetTextPaddingTop,
+        resetTextFontSize,
+        WHITE);
     
     EndDrawing();
 }

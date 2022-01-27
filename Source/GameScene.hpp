@@ -41,6 +41,11 @@ private:
     int32_t m_playerPositionY;
 
     /**
+     * Reset button bounds
+     */
+    Rectangle m_resetButtonBounds;
+
+    /**
      * List of accepted keys to make the player move up
      */
     std::vector<uint32_t> m_moveUpKeys;
@@ -59,6 +64,11 @@ private:
      * List of accepted keys to make the player move right
      */
     std::vector<uint32_t> m_moveRightKeys;
+
+    /**
+     * List of accepted keys to reset the current room
+     */
+    std::vector<uint32_t> m_resetRoomKeys;
 
 public:
     /**
