@@ -3,6 +3,7 @@
 #include "Constants.hpp"
 #include "LevelData.hpp"
 
+#include <array>
 #include <cctype>
 #include <iostream>
 #include <raylib.h>
@@ -39,16 +40,27 @@ GameScene::~GameScene()
  */
 void GameScene::Begin()
 {
-    m_levels.emplace_back();
-    if (m_levels.back().LoadFromFile("Resources/Levels/level0.dat"))
+    m_levels.clear();
+
+    std::array<std::string, 3> levelFilePaths =
     {
-        std::cout << "Successfully loaded level 0!" << std::endl;
-        m_currentLevelIndex = 0;
-    }
-    else
+        "Resources/Levels/level0.dat",
+        "Resources/Levels/level1.dat",
+        "Resources/Levels/level2.dat",
+    };
+    for (size_t i = 0; i < levelFilePaths.size(); ++i)
     {
-        std::cerr << "Failed to load level 0!" << std::endl;
+        m_levels.emplace_back();
+        if (m_levels.back().LoadFromFile(levelFilePaths[i]))
+        {
+            std::cout << "Successfully loaded level " << i << "!" << std::endl;
+        }
+        else
+        {
+            std::cerr << "Failed to load level " << i << "!" << std::endl;
+        }
     }
+    m_currentLevelIndex = 0;
 
     // --- Set up keybindings ---
     m_moveUpKeys.push_back(KEY_W);
@@ -159,10 +171,14 @@ void GameScene::Update(const float& deltaTime)
                                 int32_t numLevels = m_levels.size();
                                 if (m_currentLevelIndex + 1 < numLevels)
                                 {
-
+                                    ++m_currentLevelIndex;
+                                    ResetCurrentLevel();
                                 }
-
-                                std::cout << "Change levels!" << std::endl;
+                                else
+                                {
+                                    std::cout << "Finished all levels!" << std::endl;
+                                    GetSceneManager()->SwitchToScene(Constants::TITLE_SCENE_ID);
+                                }
                             }
                         }
                     }

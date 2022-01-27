@@ -102,7 +102,6 @@ bool LevelData::LoadFromFile(const std::string &levelFilePath)
         for (int32_t y = 0; y < roomHeight; ++y)
         {
             std::getline(file, line);
-            std::cout << line << std::endl;
             for (int32_t x = 0; x < roomWidth; ++x)
             {
                 if (std::isalpha(line[x]))
