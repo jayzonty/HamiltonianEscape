@@ -13,16 +13,28 @@
 #define SWITCH_RADIUS 12.0f
 #define SWITCH_LABEL_FONT_SIZE 24 
 
+#define START_LEVEL_TIMER_DURATION 2.0f
+#define START_LEVEL_FADE_IN_DURATION 1.0f
+#define END_LEVEL_FADE_OUT_DURATION 1.0f
+
+#define WINDOW_WIDTH 800
+#define WINDOW_HEIGHT 600
+
 /**
  * @brief Constructor
  */
 GameScene::GameScene(SceneManager *sceneManager)
     : Scene(sceneManager)
+    , m_currentState(State::Play)
     , m_levels()
     , m_currentLevelIndex(-1)
     , m_currentRoomIndex(-1)
     , m_playerPositionX(0)
     , m_playerPositionY(0)
+    , m_playerVisualScale(1.0f)
+    , m_startLevelTimer(0.0f)
+    , m_startLevelFadeInTimer(0.0f)
+    , m_endLevelFadeOutTimer(0.0f)
     , m_moveUpKeys()
     , m_moveDownKeys()
     , m_moveLeftKeys()
@@ -85,6 +97,11 @@ void GameScene::Begin()
     m_resetButtonBounds.y = 600.0f - m_resetButtonBounds.height - 10.0f;
 
     ResetCurrentLevel();
+
+    m_currentState = State::StartLevel;
+    m_startLevelTimer = START_LEVEL_TIMER_DURATION;
+    m_startLevelFadeInTimer = START_LEVEL_FADE_IN_DURATION;
+    m_playerVisualScale = 0.0f;
 }
 
 /**
@@ -93,106 +110,163 @@ void GameScene::Begin()
  */
 void GameScene::Update(const float& deltaTime)
 {
-    Vector2 mousePosition = GetMousePosition();
-    if ((IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(mousePosition, m_resetButtonBounds))
-        || IsAnyKeyPressed(m_resetRoomKeys))
-
+    if (m_currentState == State::Play)
     {
-        ResetCurrentRoom();
-        return;
-    }
+        Vector2 mousePosition = GetMousePosition();
+        if ((IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(mousePosition, m_resetButtonBounds))
+            || IsAnyKeyPressed(m_resetRoomKeys))
 
-    if ((m_currentLevelIndex >= 0) && (m_currentRoomIndex >= 0))
-    {
-        LevelData &levelData = m_levels[m_currentLevelIndex];
-        RoomData &roomData = levelData.rooms[m_currentRoomIndex];
-
-        int32_t moveX = 0, moveY = 0;
-        if (IsAnyKeyPressed(m_moveUpKeys))
         {
-            moveY = -1;
-        }
-        else if (IsAnyKeyPressed(m_moveDownKeys))
-        {
-            moveY = 1;
+            ResetCurrentRoom();
+            return;
         }
 
-        if (IsAnyKeyPressed(m_moveLeftKeys))
+        if ((m_currentLevelIndex >= 0) && (m_currentRoomIndex >= 0))
         {
-            moveX = -1;
-        }
+            LevelData &levelData = m_levels[m_currentLevelIndex];
+            RoomData &roomData = levelData.rooms[m_currentRoomIndex];
 
-        else if (IsAnyKeyPressed(m_moveRightKeys))
-        {
-            moveX = 1;
-        }
-
-        if ((moveX != 0) || (moveY != 0))
-        {
-            int32_t currentPlayerX = m_playerPositionX;
-            int32_t currentPlayerY = m_playerPositionY;
-            int32_t newPlayerX = currentPlayerX + moveX;
-            int32_t newPlayerY = currentPlayerY + moveY;
-            if (roomData.cells.IsValidLocation(newPlayerX, newPlayerY)
-                && IsTraversible(roomData.cells.Get(newPlayerX, newPlayerY)))
+            int32_t moveX = 0, moveY = 0;
+            if (IsAnyKeyPressed(m_moveUpKeys))
             {
-                m_playerPositionX = newPlayerX;
-                m_playerPositionY = newPlayerY;
+                moveY = -1;
+            }
+            else if (IsAnyKeyPressed(m_moveDownKeys))
+            {
+                moveY = 1;
+            }
 
-                CellData *cellData = roomData.cells.Get(newPlayerX, newPlayerY);
-                cellData->isVisited = true;
+            if (IsAnyKeyPressed(m_moveLeftKeys))
+            {
+                moveX = -1;
+            }
 
-                if ((currentPlayerX != newPlayerX)
-                    || (currentPlayerY != newPlayerY))
+            else if (IsAnyKeyPressed(m_moveRightKeys))
+            {
+                moveX = 1;
+            }
+
+            if ((moveX != 0) || (moveY != 0))
+            {
+                int32_t currentPlayerX = m_playerPositionX;
+                int32_t currentPlayerY = m_playerPositionY;
+                int32_t newPlayerX = currentPlayerX + moveX;
+                int32_t newPlayerY = currentPlayerY + moveY;
+                if (roomData.cells.IsValidLocation(newPlayerX, newPlayerY)
+                    && IsTraversible(roomData.cells.Get(newPlayerX, newPlayerY)))
                 {
-                    if (cellData->type == CellData::Type::Floor)
-                    {
-                    }
-                    else if (cellData->type == CellData::Type::Switch)
-                    {
-                        int32_t switchId = roomData.GetSwitchIdFromSwitchPosition(newPlayerX, newPlayerY);
-                        if (switchId != -1)
-                        {
-                            cellData->state = Constants::SWITCH_PRESSED_STATE;
+                    m_playerPositionX = newPlayerX;
+                    m_playerPositionY = newPlayerY;
 
-                            SwitchDoorMapping &mapping = roomData.switchDoorMappings[switchId];
-                            CellData *doorCell = roomData.cells.Get(mapping.doorX, mapping.doorY);
-                            doorCell->state = Constants::DOOR_UNLOCKED_STATE;
-                        }
-                    }
-                    else if (cellData->type == CellData::Type::Goal)
+                    CellData *cellData = roomData.cells.Get(newPlayerX, newPlayerY);
+                    cellData->isVisited = true;
+
+                    if ((currentPlayerX != newPlayerX)
+                        || (currentPlayerY != newPlayerY))
                     {
-                        if (cellData->state == Constants::GOAL_UNLOCKED_STATE)
+                        if (cellData->type == CellData::Type::Floor)
                         {
-                            int32_t numRooms = levelData.rooms.size();
-                            if (m_currentRoomIndex + 1 < numRooms)
+                        }
+                        else if (cellData->type == CellData::Type::Switch)
+                        {
+                            int32_t switchId = roomData.GetSwitchIdFromSwitchPosition(newPlayerX, newPlayerY);
+                            if (switchId != -1)
                             {
-                                ++m_currentRoomIndex;
-                                ResetCurrentRoom();
-                            }
-                            else
-                            {
-                                int32_t numLevels = m_levels.size();
-                                if (m_currentLevelIndex + 1 < numLevels)
-                                {
-                                    ++m_currentLevelIndex;
-                                    ResetCurrentLevel();
-                                }
-                                else
-                                {
-                                    std::cout << "Finished all levels!" << std::endl;
-                                    GetSceneManager()->SwitchToScene(Constants::TITLE_SCENE_ID);
-                                }
+                                cellData->state = Constants::SWITCH_PRESSED_STATE;
+
+                                SwitchDoorMapping &mapping = roomData.switchDoorMappings[switchId];
+                                CellData *doorCell = roomData.cells.Get(mapping.doorX, mapping.doorY);
+                                doorCell->state = Constants::DOOR_UNLOCKED_STATE;
                             }
                         }
-                    }
+                        else if (cellData->type == CellData::Type::Goal)
+                        {
+                            if (cellData->state == Constants::GOAL_UNLOCKED_STATE)
+                            {
+                                m_currentState = State::EndRoom;
+                                
+                            }
+                        }
 
-                    if (IsRoomComplete(roomData))
-                    {
-                        CellData *goalCell = roomData.cells.Get(roomData.goalX, roomData.goalY);
-                        goalCell->state = Constants::GOAL_UNLOCKED_STATE;
+                        if (IsRoomComplete(roomData))
+                        {
+                            CellData *goalCell = roomData.cells.Get(roomData.goalX, roomData.goalY);
+                            goalCell->state = Constants::GOAL_UNLOCKED_STATE;
+                        }
                     }
                 }
+            }
+        }
+    }
+    else if (m_currentState == State::StartRoom)
+    {
+        const float playerVisualScaleAnimSpeed = 1.0f; // Scale per second
+        m_playerVisualScale += playerVisualScaleAnimSpeed * deltaTime;
+        if (m_playerVisualScale >= 1.0f)
+        {
+            m_playerVisualScale = 1.0f;
+
+            m_currentState = State::Play;
+        }
+    }
+    else if (m_currentState == State::EndRoom)
+    {
+        const float playerVisualScaleAnimSpeed = 1.0f; // Scale per second
+        m_playerVisualScale -= playerVisualScaleAnimSpeed * deltaTime;
+
+        if (m_playerVisualScale <= 0.0f)
+        {
+            LevelData &levelData = m_levels[m_currentLevelIndex];
+
+            int32_t numRooms = levelData.rooms.size();
+            if (m_currentRoomIndex + 1 < numRooms)
+            {
+                ++m_currentRoomIndex;
+                ResetCurrentRoom();
+
+                m_currentState = State::StartRoom;
+            }
+            else
+            {
+                m_endLevelFadeOutTimer = END_LEVEL_FADE_OUT_DURATION;
+                m_currentState = State::EndLevel;
+            }
+        }
+    }
+    else if (m_currentState == State::StartLevel)
+    {
+        if (m_startLevelTimer <= 0.0f)
+        {
+            m_startLevelFadeInTimer -= deltaTime;
+            if (m_startLevelFadeInTimer <= 0.0f)
+            {
+                m_currentState = State::StartRoom;
+            }
+        }
+        else
+        {
+            m_startLevelTimer -= deltaTime;
+        }
+    }
+    else if (m_currentState == State::EndLevel)
+    {
+        m_endLevelFadeOutTimer -= deltaTime;
+        if (m_endLevelFadeOutTimer <= 0.0f)
+        {
+            int32_t numLevels = m_levels.size();
+            if (m_currentLevelIndex + 1 < numLevels)
+            {
+                ++m_currentLevelIndex;
+                ResetCurrentLevel();
+
+                m_currentState = State::StartLevel;
+                m_startLevelTimer = START_LEVEL_TIMER_DURATION;
+                m_startLevelFadeInTimer = START_LEVEL_FADE_IN_DURATION;
+            }
+            else
+            {
+                std::cout << "Finished all levels!" << std::endl;
+                GetSceneManager()->SwitchToScene(Constants::TITLE_SCENE_ID);
             }
         }
     }
@@ -214,6 +288,12 @@ void GameScene::Draw()
         int32_t roomWidth = roomData.cells.GetWidth();
         int32_t roomHeight = roomData.cells.GetHeight();
 
+        Vector2 offset =
+        {
+            (WINDOW_WIDTH - roomWidth * CELL_SIZE) / 2.0f, 
+            (WINDOW_HEIGHT - roomHeight * CELL_SIZE) / 2.0f
+        };
+
         // Draw grid
         for (int32_t x = 0; x < roomWidth; ++x)
         {
@@ -227,7 +307,7 @@ void GameScene::Draw()
                 {
                     if (cellData->state == Constants::SWITCH_UNPRESSED_STATE)
                     {
-                        DrawCircle((x + 0.5f) * CELL_SIZE, (y + 0.5f) * CELL_SIZE, SWITCH_RADIUS, RED);
+                        DrawCircle(offset.x + (x + 0.5f) * CELL_SIZE, offset.y + (y + 0.5f) * CELL_SIZE, SWITCH_RADIUS, RED);
 
                         int32_t switchId = roomData.GetSwitchIdFromSwitchPosition(x, y);
                         if (switchId != -1)
@@ -241,7 +321,7 @@ void GameScene::Draw()
                             Vector2 textSize = MeasureTextEx(GetFontDefault(), text.c_str(), SWITCH_LABEL_FONT_SIZE, 0.0f);
                             float paddingLeft = (CELL_SIZE - textSize.x) / 2;
                             float paddingTop = (CELL_SIZE - textSize.y) / 2;
-                            Vector2 textPosition { x * CELL_SIZE + paddingLeft, y * CELL_SIZE + paddingTop };
+                            Vector2 textPosition { offset.x + x * CELL_SIZE + paddingLeft, offset.y + y * CELL_SIZE + paddingTop };
                             DrawTextEx(GetFontDefault(), text.c_str(), textPosition, SWITCH_LABEL_FONT_SIZE, 0.0f, BLACK);
                         }
                     }
@@ -250,7 +330,7 @@ void GameScene::Draw()
                 {
                     if (cellData->state == Constants::DOOR_LOCKED_STATE)
                     {
-                        DrawRectangle(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE, BROWN);
+                        DrawRectangle(offset.x + x * CELL_SIZE, offset.y + y * CELL_SIZE, CELL_SIZE, CELL_SIZE, BROWN);
 
                         int32_t switchId = roomData.GetSwitchIdFromDoorPosition(x, y);
                         if (switchId != -1)
@@ -264,7 +344,7 @@ void GameScene::Draw()
                             Vector2 textSize = MeasureTextEx(GetFontDefault(), text.c_str(), SWITCH_LABEL_FONT_SIZE, 0.0f);
                             float paddingLeft = (CELL_SIZE - textSize.x) / 2;
                             float paddingTop = (CELL_SIZE - textSize.y) / 2;
-                            Vector2 textPosition { x * CELL_SIZE + paddingLeft, y * CELL_SIZE + paddingTop };
+                            Vector2 textPosition { offset.x + x * CELL_SIZE + paddingLeft, offset.y + y * CELL_SIZE + paddingTop };
                             DrawTextEx(GetFontDefault(), text.c_str(), textPosition, SWITCH_LABEL_FONT_SIZE, 0.0f, BLACK);
                         }
                     }
@@ -274,11 +354,11 @@ void GameScene::Draw()
                 }
                 else if (cellData->type == CellData::Type::Goal)
                 {
-                    DrawRectangle(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE, GREEN);
+                    DrawRectangle(offset.x + x * CELL_SIZE, offset.y + y * CELL_SIZE, CELL_SIZE, CELL_SIZE, GREEN);
                 }
                 else if (cellData->type == CellData::Type::Wall)
                 {
-                    DrawRectangle(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE, GRAY);
+                    DrawRectangle(offset.x + x * CELL_SIZE, offset.y + y * CELL_SIZE, CELL_SIZE, CELL_SIZE, GRAY);
                 }
             }
         }
@@ -292,13 +372,14 @@ void GameScene::Draw()
                 if (cellData->isVisited
                     && ((m_playerPositionX != x) || (m_playerPositionY != y)))
                 {
-                    DrawRectangle(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE, ColorAlpha(RED, 0.75f));
+                    DrawRectangle(offset.x + x * CELL_SIZE, offset.y + y * CELL_SIZE, CELL_SIZE, CELL_SIZE, ColorAlpha(RED, 0.75f));
                 }
             }
         }
 
         // Draw player
-        DrawCircle((m_playerPositionX + 0.5f) * CELL_SIZE, (m_playerPositionY + 0.5f) * CELL_SIZE, (CELL_SIZE - 6.0f) / 2.0f, BLUE);
+        float playerRadius = (CELL_SIZE - 6.0f) / 2.0f * m_playerVisualScale;
+        DrawCircle(offset.x + (m_playerPositionX + 0.5f) * CELL_SIZE, offset.y + (m_playerPositionY + 0.5f) * CELL_SIZE, playerRadius, BLUE);
     }
 
     // Draw reset button
@@ -316,6 +397,37 @@ void GameScene::Draw()
         m_resetButtonBounds.y + resetTextPaddingTop,
         resetTextFontSize,
         WHITE);
+
+    // Draw level start stuff
+    if ((m_currentState == State::StartLevel) || (m_currentState == State::EndLevel))
+    {
+        float alpha = m_startLevelFadeInTimer / START_LEVEL_FADE_IN_DURATION;
+        if (m_currentState == State::EndLevel)
+        {
+            alpha = (END_LEVEL_FADE_OUT_DURATION - m_endLevelFadeOutTimer) / END_LEVEL_FADE_OUT_DURATION;
+        }
+
+        DrawRectangle(0, 0, 800, 600, ColorAlpha(WHITE, alpha));
+
+        if (m_currentState == State::StartLevel)
+        {
+            float fontSize = 48.0f;
+            float spacing = 1.0f;
+            std::string text = "Level " + std::to_string(m_currentLevelIndex);
+
+            Vector2 textSize = MeasureTextEx(GetFontDefault(), text.c_str(), fontSize, spacing);
+            DrawTextPro(
+                GetFontDefault(), 
+                text.c_str(), 
+                { 400.0f, 300.0f }, 
+                { textSize.x / 2.0f, textSize.y / 2.0f },
+                0.0f,
+                fontSize, 
+                spacing, 
+                ColorAlpha(BLACK, alpha)
+            );
+        }
+    }
     
     EndDrawing();
 }

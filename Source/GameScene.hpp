@@ -16,6 +16,26 @@ class GameScene : public Scene
 {
 private:
     /**
+     * State
+     */
+    enum class State
+    {
+        Play,
+
+        StartRoom,
+        EndRoom,
+
+        StartLevel,
+        EndLevel
+    };
+
+private:
+    /**
+     * Current state
+     */
+    State m_currentState;
+
+    /**
      * List of level data
      */
     std::vector<LevelData> m_levels;
@@ -39,6 +59,26 @@ private:
      * Current Y-position of the player
      */
     int32_t m_playerPositionY;
+
+    /**
+     * Scale of the player's visual
+     */
+    float m_playerVisualScale;
+
+    /**
+     * Timer for the start of the level
+     */
+    float m_startLevelTimer;
+
+    /**
+     * Timer for the start of level fade in
+     */
+    float m_startLevelFadeInTimer;
+
+    /**
+     * Timer for the end of level fade out
+     */
+    float m_endLevelFadeOutTimer;
 
     /**
      * Reset button bounds
