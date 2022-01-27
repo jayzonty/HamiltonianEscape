@@ -105,10 +105,10 @@ public:
 private:
     /**
      * @brief Queries whether the specified cell type is traversible by the player or not
-     * @param[in] cellType Cell type
+     * @param[in] cellData Cell data
      * @return Returns true if the specified cell type is traversible. Returns false otherwise
      */
-    bool IsTraversible(CellData::Type cellType);
+    bool IsTraversible(const CellData* cellData);
 
     /**
      * @brief Queries whether any of the keys in the specified list of keys 

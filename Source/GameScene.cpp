@@ -94,16 +94,12 @@ void GameScene::Begin()
 void GameScene::Update(const float& deltaTime)
 {
     Vector2 mousePosition = GetMousePosition();
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+    if ((IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(mousePosition, m_resetButtonBounds))
+        || IsAnyKeyPressed(m_resetRoomKeys))
+
     {
-        // Check if the reset button has been clicked, or if the reset button (R)
-        // has been pressed. If so, reset the current room
-        if (CheckCollisionPointRec(mousePosition, m_resetButtonBounds)
-            || IsAnyKeyPressed(m_resetRoomKeys))
-        {
-            ResetCurrentRoom();
-            return;
-        }
+        ResetCurrentRoom();
+        return;
     }
 
     if ((m_currentLevelIndex >= 0) && (m_currentRoomIndex >= 0))
@@ -138,43 +134,30 @@ void GameScene::Update(const float& deltaTime)
             int32_t newPlayerX = currentPlayerX + moveX;
             int32_t newPlayerY = currentPlayerY + moveY;
             if (roomData.cells.IsValidLocation(newPlayerX, newPlayerY)
-                && IsTraversible(roomData.cells.Get(newPlayerX, newPlayerY)->type))
+                && IsTraversible(roomData.cells.Get(newPlayerX, newPlayerY)))
             {
                 m_playerPositionX = newPlayerX;
                 m_playerPositionY = newPlayerY;
 
                 CellData *cellData = roomData.cells.Get(newPlayerX, newPlayerY);
+                cellData->isVisited = true;
 
                 if ((currentPlayerX != newPlayerX)
                     || (currentPlayerY != newPlayerY))
                 {
                     if (cellData->type == CellData::Type::Floor)
                     {
-                        if (cellData->state == Constants::FLOOR_UNVISITED_STATE)
-                        {
-                            cellData->state = Constants::FLOOR_VISITED_STATE;
-
-                            if (IsRoomComplete(roomData))
-                            {
-                                CellData *goalCell = roomData.cells.Get(roomData.goalX, roomData.goalY);
-                                goalCell->state = Constants::GOAL_UNLOCKED_STATE;
-                            }
-                        }
-                        else if( cellData->state == Constants::FLOOR_VISITED_STATE)
-                        {
-                        }
                     }
                     else if (cellData->type == CellData::Type::Switch)
                     {
                         int32_t switchId = roomData.GetSwitchIdFromSwitchPosition(newPlayerX, newPlayerY);
                         if (switchId != -1)
                         {
-                            cellData->type = CellData::Type::Floor;
-                            cellData->state = Constants::FLOOR_VISITED_STATE;
+                            cellData->state = Constants::SWITCH_PRESSED_STATE;
 
                             SwitchDoorMapping &mapping = roomData.switchDoorMappings[switchId];
                             CellData *doorCell = roomData.cells.Get(mapping.doorX, mapping.doorY);
-                            doorCell->type = CellData::Type::Floor;
+                            doorCell->state = Constants::DOOR_UNLOCKED_STATE;
                         }
                     }
                     else if (cellData->type == CellData::Type::Goal)
@@ -202,6 +185,12 @@ void GameScene::Update(const float& deltaTime)
                                 }
                             }
                         }
+                    }
+
+                    if (IsRoomComplete(roomData))
+                    {
+                        CellData *goalCell = roomData.cells.Get(roomData.goalX, roomData.goalY);
+                        goalCell->state = Constants::GOAL_UNLOCKED_STATE;
                     }
                 }
             }
@@ -236,42 +225,48 @@ void GameScene::Draw()
                 }
                 else if (cellData->type == CellData::Type::Switch)
                 {
-                    DrawCircle((x + 0.5f) * CELL_SIZE, (y + 0.5f) * CELL_SIZE, SWITCH_RADIUS, RED);
-
-                    int32_t switchId = roomData.GetSwitchIdFromSwitchPosition(x, y);
-                    if (switchId != -1)
+                    if (cellData->state == Constants::SWITCH_UNPRESSED_STATE)
                     {
-                        char c = static_cast<char>(switchId);
-                        c = std::toupper(c);
+                        DrawCircle((x + 0.5f) * CELL_SIZE, (y + 0.5f) * CELL_SIZE, SWITCH_RADIUS, RED);
 
-                        std::string text;
-                        text.push_back(c);
+                        int32_t switchId = roomData.GetSwitchIdFromSwitchPosition(x, y);
+                        if (switchId != -1)
+                        {
+                            char c = static_cast<char>(switchId);
+                            c = std::toupper(c);
 
-                        Vector2 textSize = MeasureTextEx(GetFontDefault(), text.c_str(), SWITCH_LABEL_FONT_SIZE, 0.0f);
-                        float paddingLeft = (CELL_SIZE - textSize.x) / 2;
-                        float paddingTop = (CELL_SIZE - textSize.y) / 2;
-                        Vector2 textPosition { x * CELL_SIZE + paddingLeft, y * CELL_SIZE + paddingTop };
-                        DrawTextEx(GetFontDefault(), text.c_str(), textPosition, SWITCH_LABEL_FONT_SIZE, 0.0f, BLACK);
+                            std::string text;
+                            text.push_back(c);
+
+                            Vector2 textSize = MeasureTextEx(GetFontDefault(), text.c_str(), SWITCH_LABEL_FONT_SIZE, 0.0f);
+                            float paddingLeft = (CELL_SIZE - textSize.x) / 2;
+                            float paddingTop = (CELL_SIZE - textSize.y) / 2;
+                            Vector2 textPosition { x * CELL_SIZE + paddingLeft, y * CELL_SIZE + paddingTop };
+                            DrawTextEx(GetFontDefault(), text.c_str(), textPosition, SWITCH_LABEL_FONT_SIZE, 0.0f, BLACK);
+                        }
                     }
                 }
                 else if (cellData->type == CellData::Type::Door)
                 {
-                    DrawRectangle(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE, BROWN);
-
-                    int32_t switchId = roomData.GetSwitchIdFromDoorPosition(x, y);
-                    if (switchId != -1)
+                    if (cellData->state == Constants::DOOR_LOCKED_STATE)
                     {
-                        char c = static_cast<char>(switchId);
-                        c = std::toupper(c);
+                        DrawRectangle(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE, BROWN);
 
-                        std::string text;
-                        text.push_back(c);
+                        int32_t switchId = roomData.GetSwitchIdFromDoorPosition(x, y);
+                        if (switchId != -1)
+                        {
+                            char c = static_cast<char>(switchId);
+                            c = std::toupper(c);
 
-                        Vector2 textSize = MeasureTextEx(GetFontDefault(), text.c_str(), SWITCH_LABEL_FONT_SIZE, 0.0f);
-                        float paddingLeft = (CELL_SIZE - textSize.x) / 2;
-                        float paddingTop = (CELL_SIZE - textSize.y) / 2;
-                        Vector2 textPosition { x * CELL_SIZE + paddingLeft, y * CELL_SIZE + paddingTop };
-                        DrawTextEx(GetFontDefault(), text.c_str(), textPosition, SWITCH_LABEL_FONT_SIZE, 0.0f, BLACK);
+                            std::string text;
+                            text.push_back(c);
+
+                            Vector2 textSize = MeasureTextEx(GetFontDefault(), text.c_str(), SWITCH_LABEL_FONT_SIZE, 0.0f);
+                            float paddingLeft = (CELL_SIZE - textSize.x) / 2;
+                            float paddingTop = (CELL_SIZE - textSize.y) / 2;
+                            Vector2 textPosition { x * CELL_SIZE + paddingLeft, y * CELL_SIZE + paddingTop };
+                            DrawTextEx(GetFontDefault(), text.c_str(), textPosition, SWITCH_LABEL_FONT_SIZE, 0.0f, BLACK);
+                        }
                     }
                 }
                 else if (cellData->type == CellData::Type::Floor)
@@ -294,8 +289,7 @@ void GameScene::Draw()
             for (int32_t y = 0; y < roomHeight; ++y)
             {
                 CellData *cellData = roomData.cells.Get(x, y);
-                if ((cellData->type == CellData::Type::Floor)
-                    && (cellData->state == Constants::FLOOR_VISITED_STATE)
+                if (cellData->isVisited
                     && ((m_playerPositionX != x) || (m_playerPositionY != y)))
                 {
                     DrawRectangle(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE, ColorAlpha(RED, 0.75f));
@@ -335,13 +329,25 @@ void GameScene::End()
 
 /**
  * @brief Queries whether the specified cell type is traversible by the player or not
- * @param[in] cellType Cell type
+ * @param[in] cellData Cell data
  * @return Returns true if the specified cell type is traversible. Returns false otherwise
  */
-bool GameScene::IsTraversible(CellData::Type cellType)
+bool GameScene::IsTraversible(const CellData* cellData)
 {
-    if ((cellType == CellData::Type::Wall)
-        || (cellType == CellData::Type::Door))
+    if (cellData == nullptr)
+    {
+        return false;
+    }
+    if (cellData->type == CellData::Type::Wall)
+    {
+        return false;
+    }
+    if (cellData->isVisited)
+    {
+        return false;
+    }
+    if ((cellData->type == CellData::Type::Door)
+        && (cellData->state == Constants::DOOR_LOCKED_STATE))
     {
         return false;
     }
@@ -401,6 +407,7 @@ void GameScene::ResetCurrentRoom()
         {
             CellData *cellData = roomData.cells.Get(x, y);
             cellData->state = 0;
+            cellData->isVisited = false;
         }
     }
 
@@ -408,7 +415,7 @@ void GameScene::ResetCurrentRoom()
     if ((playerCell != nullptr)
         && (playerCell->type == CellData::Type::Floor))
     {
-        playerCell->state = Constants::FLOOR_VISITED_STATE;
+        playerCell->isVisited = true;
     }
 
     CellData *goalCell = roomData.cells.Get(roomData.goalX, roomData.goalY);
@@ -434,7 +441,7 @@ bool GameScene::IsRoomComplete(RoomData &roomData)
             CellData *cellData = roomData.cells.Get(x, y);
             if (cellData->type == CellData::Type::Floor)
             {
-                if (cellData->state == Constants::FLOOR_UNVISITED_STATE)
+                if (!cellData->isVisited)
                 {
                     return false;
                 }

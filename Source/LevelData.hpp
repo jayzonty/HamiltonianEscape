@@ -63,6 +63,11 @@ struct CellData
     Type type;
 
     /**
+     * Flag indicating whether this cell has been visited or not
+     */
+    bool isVisited;
+
+    /**
      * Current state of the cell
      */
     int32_t state;
