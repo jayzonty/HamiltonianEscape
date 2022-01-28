@@ -26,7 +26,9 @@ private:
         EndRoom,
 
         StartLevel,
-        EndLevel
+        EndLevel,
+
+        GameEnd
     };
 
 private:
@@ -84,6 +86,11 @@ private:
      * Reset button bounds
      */
     Rectangle m_resetButtonBounds;
+
+    /**
+     * Back to title button bounds
+     */
+    Rectangle m_backToTitleButton;
 
     /**
      * List of accepted keys to make the player move up

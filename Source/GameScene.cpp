@@ -19,9 +19,6 @@
 
 #define INSTRUCTIONS_TEXT_FONT_SIZE 24
 
-#define WINDOW_WIDTH 800
-#define WINDOW_HEIGHT 600
-
 /**
  * @brief Constructor
  */
@@ -37,6 +34,8 @@ GameScene::GameScene(SceneManager *sceneManager)
     , m_startLevelTimer(0.0f)
     , m_startLevelFadeInTimer(0.0f)
     , m_endLevelFadeOutTimer(0.0f)
+    , m_resetButtonBounds()
+    , m_backToTitleButton()
     , m_moveUpKeys()
     , m_moveDownKeys()
     , m_moveLeftKeys()
@@ -95,8 +94,13 @@ void GameScene::Begin()
 
     m_resetButtonBounds.width = 140.0f;
     m_resetButtonBounds.height = 50.0f;
-    m_resetButtonBounds.x = WINDOW_WIDTH - m_resetButtonBounds.width - 10.0f;
-    m_resetButtonBounds.y = WINDOW_HEIGHT - m_resetButtonBounds.height - 10.0f;
+    m_resetButtonBounds.x = GetScreenWidth() - m_resetButtonBounds.width - 10.0f;
+    m_resetButtonBounds.y = GetScreenHeight() - m_resetButtonBounds.height - 10.0f;
+
+    m_backToTitleButton.width = 200.0f;
+    m_backToTitleButton.height = 50.0f;
+    m_backToTitleButton.x = (GetScreenWidth() - m_backToTitleButton.width) / 2.0f;
+    m_backToTitleButton.y = (GetScreenHeight() - m_backToTitleButton.height) / 2.0f;
 
     ResetCurrentLevel();
 
@@ -279,7 +283,16 @@ void GameScene::Update(const float& deltaTime)
             }
             else
             {
-                std::cout << "Finished all levels!" << std::endl;
+                m_currentState = State::GameEnd;
+            }
+        }
+    }
+    else if (m_currentState == State::GameEnd)
+    {
+        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+        {
+            if (CheckCollisionPointRec(GetMousePosition(), m_backToTitleButton))
+            {
                 GetSceneManager()->SwitchToScene(Constants::TITLE_SCENE_ID);
             }
         }
@@ -295,7 +308,8 @@ void GameScene::Draw()
     ClearBackground(WHITE);
 
     if ((m_currentLevelIndex >= 0)
-        && (m_currentRoomIndex >= 0))
+        && (m_currentRoomIndex >= 0)
+        && (m_currentState != State::GameEnd))
     {
         LevelData &levelData = m_levels[m_currentLevelIndex];
         RoomData &roomData = levelData.rooms[m_currentRoomIndex];
@@ -304,8 +318,8 @@ void GameScene::Draw()
 
         Vector2 offset =
         {
-            (WINDOW_WIDTH - roomWidth * CELL_SIZE) / 2.0f, 
-            (WINDOW_HEIGHT - roomHeight * CELL_SIZE) / 2.0f
+            (GetScreenWidth() - roomWidth * CELL_SIZE) / 2.0f, 
+            (GetScreenHeight() - roomHeight * CELL_SIZE) / 2.0f
         };
 
         // Draw grid
@@ -407,33 +421,33 @@ void GameScene::Draw()
         // Draw player
         float playerRadius = (CELL_SIZE - 6.0f) / 2.0f * m_playerVisualScale;
         DrawCircle(offset.x + (m_playerPositionX + 0.5f) * CELL_SIZE, offset.y + (m_playerPositionY + 0.5f) * CELL_SIZE, playerRadius, BLUE);
+
+        // Draw reset button
+        std::string resetText = "Reset (R)";
+        float resetTextFontSize = 24.0f;
+        DrawRectangleRec(m_resetButtonBounds, BLACK);
+        int32_t resetTextWidth = MeasureText(
+            resetText.c_str(),
+            resetTextFontSize);
+        float resetTextPaddingLeft = (m_resetButtonBounds.width - resetTextWidth) / 2.0f;
+        float resetTextPaddingTop = (m_resetButtonBounds.height - resetTextFontSize) / 2.0f;
+        DrawText(
+            resetText.c_str(),
+            m_resetButtonBounds.x + resetTextPaddingLeft,
+            m_resetButtonBounds.y + resetTextPaddingTop,
+            resetTextFontSize,
+            WHITE);
+
+        // Draw instructions text
+        std::string instructionsText = "W/A/S/D/Arrow Keys - Move";
+        DrawText(
+            instructionsText.c_str(), 
+            10, 
+            GetScreenHeight() - INSTRUCTIONS_TEXT_FONT_SIZE - 10,
+            INSTRUCTIONS_TEXT_FONT_SIZE, 
+            BLACK
+        );
     }
-
-    // Draw reset button
-    std::string resetText = "Reset (R)";
-    float resetTextFontSize = 24.0f;
-    DrawRectangleRec(m_resetButtonBounds, BLACK);
-    int32_t resetTextWidth = MeasureText(
-        resetText.c_str(),
-        resetTextFontSize);
-    float resetTextPaddingLeft = (m_resetButtonBounds.width - resetTextWidth) / 2.0f;
-    float resetTextPaddingTop = (m_resetButtonBounds.height - resetTextFontSize) / 2.0f;
-    DrawText(
-        resetText.c_str(),
-        m_resetButtonBounds.x + resetTextPaddingLeft,
-        m_resetButtonBounds.y + resetTextPaddingTop,
-        resetTextFontSize,
-        WHITE);
-
-    // Draw instructions text
-    std::string instructionsText = "W/A/S/D/Arrow Keys - Move";
-    DrawText(
-        instructionsText.c_str(), 
-        10, 
-        WINDOW_HEIGHT - INSTRUCTIONS_TEXT_FONT_SIZE - 10,
-        INSTRUCTIONS_TEXT_FONT_SIZE, 
-        BLACK
-    );
 
     // Draw level start stuff
     if ((m_currentState == State::StartLevel) || (m_currentState == State::EndLevel))
@@ -464,6 +478,42 @@ void GameScene::Draw()
                 ColorAlpha(BLACK, alpha)
             );
         }
+    }
+
+    if (m_currentState == State::GameEnd)
+    {
+        const int32_t gameEndTextFontSize = 36;
+        const std::string text = "You have completed all levels!";
+        int32_t textWidth = MeasureText(text.c_str(), gameEndTextFontSize);
+        DrawText(
+            text.c_str(),
+            (GetScreenWidth() - textWidth) / 2.0f,
+            m_backToTitleButton.y - gameEndTextFontSize - 20,
+            gameEndTextFontSize,
+            BLACK
+        );
+
+        int32_t buttonTextFontSize = 24;
+        int32_t buttonOutlineThickness = 4;
+        DrawRectangleRec(m_backToTitleButton, BLACK);
+        DrawRectangle(
+            m_backToTitleButton.x + buttonOutlineThickness,
+            m_backToTitleButton.y + buttonOutlineThickness,
+            m_backToTitleButton.width - buttonOutlineThickness * 2,
+            m_backToTitleButton.height - buttonOutlineThickness * 2,
+            WHITE
+        );
+        const std::string buttonText = "Back to Title";
+        textWidth = MeasureText(buttonText.c_str(), buttonTextFontSize);
+        float paddingLeft = (m_backToTitleButton.width - textWidth) / 2.0f;
+        float paddingTop = (m_backToTitleButton.height - buttonTextFontSize) / 2.0f;
+        DrawText(
+            buttonText.c_str(),
+            m_backToTitleButton.x + paddingLeft,
+            m_backToTitleButton.y + paddingTop,
+            buttonTextFontSize,
+            BLACK
+        );
     }
     
     EndDrawing();
