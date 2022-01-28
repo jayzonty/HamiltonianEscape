@@ -4,6 +4,8 @@
 
 #include <raylib.h>
 
+#include <string>
+
 /**
  * @brief Constructor
  */
@@ -55,6 +57,30 @@ void TitleScene::Draw()
 {
     BeginDrawing();
     ClearBackground(BLUE);
+
+    // Draw title
+    const int32_t titleFontSize = 60;
+    const std::string titleText = "Hamiltonian Escape";
+    const int32_t titleTextWidth = MeasureText(titleText.c_str(), titleFontSize);
+    const int32_t titleTextX = (GetScreenWidth() - titleTextWidth) / 2.0f;
+    const int32_t titleTextY = 100;
+    const int32_t dropShadowOffsetX = 5, dropShadowOffsetY = 5;
+    // Drop shadow
+    DrawText(
+        titleText.c_str(),
+        (GetScreenWidth() - titleTextWidth) / 2.0f + dropShadowOffsetX,
+        titleTextY + dropShadowOffsetY,
+        titleFontSize,
+        BLACK
+    );
+    // Text
+    DrawText(
+        titleText.c_str(),
+        titleTextX,
+        titleTextY,
+        titleFontSize,
+        WHITE
+    );
 
     DrawRectangleRec(m_startGameButtonBounds, BLACK);
     float fontSize = 32.0f;
