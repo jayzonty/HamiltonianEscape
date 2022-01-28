@@ -59,9 +59,8 @@ void GameScene::Begin()
 {
     m_levels.clear();
 
-    std::array<std::string, 3> levelFilePaths =
+    std::array<std::string, 2> levelFilePaths =
     {
-        "Resources/Levels/level0.dat",
         "Resources/Levels/level1.dat",
         "Resources/Levels/level2.dat",
     };
@@ -451,7 +450,7 @@ void GameScene::Draw()
         {
             float fontSize = 48.0f;
             float spacing = 1.0f;
-            std::string text = "Level " + std::to_string(m_currentLevelIndex);
+            std::string text = "Level " + std::to_string(m_currentLevelIndex + 1);
 
             Vector2 textSize = MeasureTextEx(GetFontDefault(), text.c_str(), fontSize, spacing);
             DrawTextPro(
