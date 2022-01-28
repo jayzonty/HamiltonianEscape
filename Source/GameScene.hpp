@@ -110,6 +110,8 @@ private:
      */
     std::vector<uint32_t> m_resetRoomKeys;
 
+    Music m_backgroundMusic;
+
 public:
     /**
      * @brief Constructor

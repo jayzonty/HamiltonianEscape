@@ -12,6 +12,13 @@ int main()
     {
         InitWindow(800, 600, "Hamiltonian Escape");
 
+        InitAudioDevice();
+        if (IsAudioDeviceReady())
+        {
+            std::cout << "Audio device loaded successfully!" << std::endl;
+        }
+        SetMasterVolume(1.0f);
+
         SceneManager sceneManager;
 
         // Create all scenes
@@ -36,6 +43,8 @@ int main()
                 activeScene->Draw();
             }
         }
+
+        CloseAudioDevice();
         CloseWindow();
 
         delete gameScene;
