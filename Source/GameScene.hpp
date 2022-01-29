@@ -93,6 +93,26 @@ private:
     Rectangle m_backToTitleButton;
 
     /**
+     * Slide X-direction
+     */
+    int32_t m_slideDirectionX;
+
+    /**
+     * Slide Y-direction
+     */
+    int32_t m_slideDirectionY;
+
+    /**
+     * Timer for sliding to the next cell
+     */
+    float m_slideTimer;
+
+    /**
+     * Flag indicating whether we are currently sliding
+     */
+    bool m_isSliding;
+
+    /**
      * List of accepted keys to make the player move up
      */
     std::vector<uint32_t> m_moveUpKeys;
@@ -117,7 +137,15 @@ private:
      */
     std::vector<uint32_t> m_resetRoomKeys;
 
+    /**
+     * Background music
+     */
     Music m_backgroundMusic;
+
+    /**
+     * Map of strings and their corresponding textures
+     */
+    std::map<std::string, Texture2D> m_textures;
 
 public:
     /**
@@ -158,6 +186,16 @@ private:
      * @return Returns true if the specified cell type is traversible. Returns false otherwise
      */
     bool IsTraversible(const CellData* cellData);
+
+    /**
+     * @brief Moves the player by the specified move amount within the grid
+     * @param[in] moveX Move amount in the x-axis
+     * @param[in] moveY Move amount in the y-axis
+     * @return Returns true if the movement was successful 
+     * (not hitting a wall, not going into a visited cell). 
+     * Returns false otherwise.
+     */
+    bool Move(const int32_t& moveX, const int32_t& moveY);
 
     /**
      * @brief Queries whether any of the keys in the specified list of keys 

@@ -54,6 +54,7 @@ struct CellData
         Switch,
         Door,
         Wall,
+        Ice,
         Goal
     };
 

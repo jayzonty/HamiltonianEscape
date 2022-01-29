@@ -7,9 +7,9 @@
 #include <string>
 
 #define WALL_SYMBOL '#'
-#define START_SYMBOL '*'
 #define GOAL_SYMBOL '@'
 #define FLOOR_SYMBOL '.'
+#define ICE_SYMBOL '*'
 
 /**
  * @brief Gets the switch ID from the switch position
@@ -130,6 +130,10 @@ bool LevelData::LoadFromFile(const std::string &levelFilePath)
                             break;
                         case WALL_SYMBOL:
                             room.cells.Get(x, y)->type = CellData::Type::Wall;
+                            break;
+
+                        case ICE_SYMBOL:
+                            room.cells.Get(x, y)->type = CellData::Type::Ice;
                             break;
 
                         case GOAL_SYMBOL:
