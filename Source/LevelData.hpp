@@ -138,6 +138,11 @@ struct LevelData
      */
     std::vector<RoomData> rooms;
 
+    /**
+     * Level description
+     */
+    std::vector<std::string> descriptionLines;
+
 public:
     /**
      * @brief Constructor

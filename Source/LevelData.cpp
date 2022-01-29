@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <string>
 
 #define WALL_SYMBOL '#'
@@ -79,6 +80,20 @@ bool LevelData::LoadFromFile(const std::string &levelFilePath)
         return false;
     }
 
+    descriptionLines.clear();
+
+    int32_t descriptionNumLines;
+    file >> descriptionNumLines;
+
+    std::string line;
+    std::getline(file, line);
+
+    for (int32_t i = 0; i < descriptionNumLines; ++i)
+    {
+        std::getline(file, line);
+        descriptionLines.push_back(line);
+    }
+
     rooms.clear();
 
     int32_t numRooms;
@@ -97,7 +112,6 @@ bool LevelData::LoadFromFile(const std::string &levelFilePath)
         RoomData &room = rooms.back();
         room.cells.Resize(roomWidth, roomHeight);
 
-        std::string line;
         std::getline(file, line);
         for (int32_t y = 0; y < roomHeight; ++y)
         {

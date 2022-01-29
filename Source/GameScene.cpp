@@ -449,6 +449,26 @@ void GameScene::Draw()
             INSTRUCTIONS_TEXT_FONT_SIZE, 
             BLACK
         );
+
+        int32_t descriptionTextY = 20;
+        // Draw level description lines
+        for (size_t i = 0; i < levelData.descriptionLines.size(); ++i)
+        {
+            int32_t descriptionTextFontSize = 24;
+            int32_t descriptionTextWidth = MeasureText(levelData.descriptionLines[i].c_str(), descriptionTextFontSize);
+            int32_t descriptionTextX = (GetScreenWidth() - descriptionTextWidth) / 2;
+
+            DrawText(
+                levelData.descriptionLines[i].c_str(),
+                descriptionTextX,
+                descriptionTextY,
+                descriptionTextFontSize,
+                BLACK
+            );
+
+            descriptionTextY += descriptionTextFontSize + 10;
+        }
+        
     }
 
     // Draw level start stuff
