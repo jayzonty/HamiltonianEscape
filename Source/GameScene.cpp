@@ -77,11 +77,11 @@ void GameScene::Begin()
         m_levels.emplace_back();
         if (m_levels.back().LoadFromFile(levelFilePaths[i]))
         {
-            std::cout << "Successfully loaded level " << i << "!" << std::endl;
+            std::cout << "Successfully loaded level " << (i + 1) << "!" << std::endl;
         }
         else
         {
-            std::cerr << "Failed to load level " << i << "!" << std::endl;
+            std::cerr << "Failed to load level " << (i + 1) << "!" << std::endl;
         }
     }
     m_currentLevelIndex = 0;
@@ -128,11 +128,6 @@ void GameScene::Begin()
     m_startLevelTimer = START_LEVEL_TIMER_DURATION;
     m_startLevelFadeInTimer = START_LEVEL_FADE_IN_DURATION;
     m_playerVisualScale = 0.0f;
-
-    m_textures[Constants::SLIDE_UP_TEXTURE_NAME] = LoadTexture("Resources/Sprites/slide_up.png");
-    m_textures[Constants::SLIDE_DOWN_TEXTURE_NAME] = LoadTexture("Resources/Sprites/slide_down.png");
-    m_textures[Constants::SLIDE_LEFT_TEXTURE_NAME] = LoadTexture("Resources/Sprites/slide_left.png");
-    m_textures[Constants::SLIDE_RIGHT_TEXTURE_NAME] = LoadTexture("Resources/Sprites/slide_right.png");
 }
 
 /**
