@@ -138,11 +138,6 @@ private:
     std::vector<uint32_t> m_resetRoomKeys;
 
     /**
-     * Background music
-     */
-    Music m_backgroundMusic;
-
-    /**
      * Map of strings and their corresponding textures
      */
     std::map<std::string, Texture2D> m_textures;

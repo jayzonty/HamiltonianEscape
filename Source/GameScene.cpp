@@ -46,7 +46,6 @@ GameScene::GameScene(SceneManager *sceneManager)
     , m_moveDownKeys()
     , m_moveLeftKeys()
     , m_moveRightKeys()
-    , m_backgroundMusic()
     , m_textures()
 {
 }
@@ -113,17 +112,6 @@ void GameScene::Begin()
 
     ResetCurrentLevel();
 
-    m_backgroundMusic = LoadMusicStream("Resources/Audio/bgm.wav");
-    m_backgroundMusic.looping = true;
-
-    // HACK: To make the audio loop more seamless.
-    // I figure it's because raylib immediately stops the song
-    // upon reaching the end of the buffer before the data can be 
-    // sent to the speakers. For now, I just added a big number to the frame count
-    m_backgroundMusic.frameCount += 500; 
-
-    PlayMusicStream(m_backgroundMusic);
-
     m_currentState = State::StartLevel;
     m_startLevelTimer = START_LEVEL_TIMER_DURATION;
     m_startLevelFadeInTimer = START_LEVEL_FADE_IN_DURATION;
@@ -136,8 +124,6 @@ void GameScene::Begin()
  */
 void GameScene::Update(const float& deltaTime)
 {
-    UpdateMusicStream(m_backgroundMusic);
-
     if (m_currentState == State::Play)
     {
         Vector2 mousePosition = GetMousePosition();
@@ -552,9 +538,6 @@ void GameScene::End()
         UnloadTexture(it.second);
     }
     m_textures.clear();
-
-    // Unload background music
-    UnloadMusicStream(m_backgroundMusic);
 }
 
 /**

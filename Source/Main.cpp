@@ -17,7 +17,19 @@ int main()
         {
             std::cout << "Audio device loaded successfully!" << std::endl;
         }
-        SetMasterVolume(1.0f);
+        SetMasterVolume(0.5f);
+
+        Music backgroundMusic = LoadMusicStream("Resources/Audio/bgm.wav");
+        backgroundMusic.looping = true;
+
+        // HACK: To make the audio loop more seamless.
+        // I figure it's because raylib immediately stops the song
+        // upon reaching the end of the buffer before the data can be 
+        // sent to the speakers. For now, I just added a big number to the frame count
+        // but a more flexbible approach should be thought of in the future
+        backgroundMusic.frameCount += 1000;
+
+        PlayMusicStream(backgroundMusic);
 
         SceneManager sceneManager;
 
@@ -34,6 +46,8 @@ int main()
 
         while (!WindowShouldClose())
         {
+            UpdateMusicStream(backgroundMusic);
+
             float deltaTime = GetFrameTime();
 
             Scene *activeScene = sceneManager.GetActiveScene();
@@ -43,6 +57,8 @@ int main()
                 activeScene->Draw();
             }
         }
+
+        UnloadMusicStream(backgroundMusic);
 
         CloseAudioDevice();
         CloseWindow();
