@@ -6,6 +6,6 @@ Hamiltonian Escape is a simple 2D grid-based puzzle game based on Hamiltonian pa
 
 The game was made using C++ and the [Raylib](https://www.raylib.com/) library compiled for HTML5. The background music was made using [PixiTracker](https://warmplace.ru/soft/pixitracker/).
 
-This game was made as an entry for JameGam15, with the theme of "No Going Back".
+This game was made as an entry for JameGam15, with the theme of "No Going Back", which ran from January 25, 2022 - January 30, 2022.
 
 You can play the game in a browser [here](https://jayzonty.itch.io/hamiltonian-escape).
